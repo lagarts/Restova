@@ -2,12 +2,52 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import type { AuthError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 
 export type AuthActionState = {
   error?: string;
   success?: string;
 };
+
+function signInErrorMessage(error: AuthError): string {
+  const code = error.code ?? "";
+  const message = error.message ?? "";
+
+  if (code === "invalid_credentials" || /invalid login credentials/i.test(message)) {
+    return "Email o contraseña incorrectos.";
+  }
+  if (code === "email_not_confirmed" || /email not confirmed/i.test(message)) {
+    return "Tu email todavía no está confirmado. Revisá tu bandeja o pedí un restablecimiento de contraseña.";
+  }
+  if (
+    code === "over_request_rate_limit" ||
+    code === "too_many_requests" ||
+    /rate limit/i.test(message)
+  ) {
+    return "Demasiados intentos. Esperá un minuto y probá de nuevo.";
+  }
+  if (code === "user_banned" || /banned/i.test(message)) {
+    return "Esta cuenta está deshabilitada. Contactá al administrador.";
+  }
+  return "No pudimos iniciar sesión. Intentá nuevamente.";
+}
+
+function signUpErrorMessage(error: AuthError): string {
+  const code = error.code ?? "";
+  const message = error.message ?? "";
+
+  if (code === "user_already_exists" || /already registered/i.test(message)) {
+    return "Ya existe una cuenta con ese email.";
+  }
+  if (code === "over_request_rate_limit" || code === "too_many_requests" || /rate limit/i.test(message)) {
+    return "Demasiados intentos de registro. Esperá unos minutos y probá de nuevo.";
+  }
+  if (code === "weak_password" || /password should be/i.test(message)) {
+    return "La contraseña es demasiado débil. Usá al menos 8 caracteres.";
+  }
+  return "No pudimos crear la cuenta. Intentá nuevamente.";
+}
 
 function safeNext(raw: string | null | undefined): string {
   if (!raw) return "/dashboard";
@@ -31,12 +71,7 @@ export async function signIn(
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    return {
-      error:
-        error.code === "invalid_credentials"
-          ? "Email o contraseña incorrectos."
-          : "No pudimos iniciar sesión. Intentá nuevamente.",
-    };
+    return { error: signInErrorMessage(error) };
   }
 
   revalidatePath("/", "layout");
@@ -71,12 +106,7 @@ export async function signUp(
   });
 
   if (error) {
-    return {
-      error:
-        error.code === "user_already_exists"
-          ? "Ya existe una cuenta con ese email."
-          : "No pudimos crear la cuenta. Intentá nuevamente.",
-    };
+    return { error: signUpErrorMessage(error) };
   }
 
   if (!data.session) {
