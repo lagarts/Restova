@@ -10,6 +10,15 @@ export type AuthActionState = {
   success?: string;
 };
 
+function logAuthError(scope: string, error: AuthError): void {
+  console.error(`[auth:${scope}]`, JSON.stringify({
+    name: error.name,
+    code: error.code ?? null,
+    status: error.status ?? null,
+    message: error.message,
+  }));
+}
+
 function signInErrorMessage(error: AuthError): string {
   const code = error.code ?? "";
   const message = error.message ?? "";
@@ -29,6 +38,9 @@ function signInErrorMessage(error: AuthError): string {
   }
   if (code === "user_banned" || /banned/i.test(message)) {
     return "Esta cuenta está deshabilitada. Contactá al administrador.";
+  }
+  if (/fetch|network|socket|ECONN/i.test(message)) {
+    return "No pudimos conectar con el servidor. Revisá tu conexión a internet.";
   }
   return "No pudimos iniciar sesión. Intentá nuevamente.";
 }
@@ -71,6 +83,7 @@ export async function signIn(
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
+    logAuthError("signIn", error);
     return { error: signInErrorMessage(error) };
   }
 
@@ -106,6 +119,7 @@ export async function signUp(
   });
 
   if (error) {
+    logAuthError("signUp", error);
     return { error: signUpErrorMessage(error) };
   }
 
