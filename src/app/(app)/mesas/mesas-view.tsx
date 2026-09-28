@@ -110,6 +110,7 @@ export default function MesasView({
       }
     | null
   >(null);
+  const suppressClickRef = useRef(false);
 
   const resolve = useCallback(
     (table: DiningTable): Geometry => geometry[table.id] ?? table,
@@ -152,6 +153,7 @@ export default function MesasView({
     table: DiningTable,
     mode: "move" | "resize"
   ) {
+    suppressClickRef.current = mode === "resize";
     if (!canManage) return;
     const canvas = event.currentTarget.closest("[data-canvas]") as HTMLElement | null;
     if (!canvas) return;
@@ -171,6 +173,10 @@ export default function MesasView({
   function onPointerMove(event: React.PointerEvent<HTMLElement>) {
     const drag = dragRef.current;
     if (!drag) return;
+
+    if (Math.abs(event.clientX - drag.startX) > 4 || Math.abs(event.clientY - drag.startY) > 4) {
+      suppressClickRef.current = true;
+    }
 
     const dx = Math.round((event.clientX - drag.startX) / drag.cellW);
     const dy = Math.round((event.clientY - drag.startY) / CELL_HEIGHT);
@@ -292,7 +298,13 @@ export default function MesasView({
                           key={table.id}
                           role="button"
                           tabIndex={0}
-                          onClick={() => setSelectedId(table.id)}
+                          onClick={() => {
+                            if (suppressClickRef.current) {
+                              suppressClickRef.current = false;
+                              return;
+                            }
+                            setSelectedId(table.id);
+                          }}
                           onKeyDown={(event) => {
                             if (event.key === "Enter") setSelectedId(table.id);
                           }}
@@ -316,7 +328,10 @@ export default function MesasView({
                           )}
                           {canManage && (
                             <span
-                              onPointerDown={(event) => onPointerDown(event, table, "resize")}
+                              onPointerDown={(event) => {
+                                event.stopPropagation();
+                                onPointerDown(event, table, "resize");
+                              }}
                               className="absolute right-0 bottom-0 size-4 cursor-nwse-resize rounded-br-xl border-l-2 border-t-2 border-current opacity-40"
                             />
                           )}
