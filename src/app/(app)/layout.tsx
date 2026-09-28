@@ -1,9 +1,11 @@
 import { requireOrgContext } from "@/lib/tenant/require";
+import { isPlatformAdmin } from "@/lib/auth/platform-admin";
 import { Sidebar } from "@/components/layout/sidebar";
 import { SubscriptionBanner } from "@/components/layout/subscription-banner";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const context = await requireOrgContext();
+  const platformAdmin = await isPlatformAdmin();
 
   return (
     <div className="flex h-dvh overflow-hidden">
@@ -12,6 +14,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         businessName={context.org.name}
         branchName={context.branch.name}
         canOperate={context.canOperate}
+        isPlatformAdmin={platformAdmin}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">

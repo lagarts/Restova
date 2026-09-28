@@ -8,6 +8,7 @@ import {
   Receipt,
   Wallet,
   Settings,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 import type { Permission } from "@/lib/auth/rbac";
@@ -21,6 +22,8 @@ export type NavItem = {
   enabled: boolean;
   /** Operational surfaces are unusable while the subscription is blocked. */
   requiresOperation?: boolean;
+  /** Only visible to the platform superadmin, outside of any organization. */
+  platformAdmin?: boolean;
 };
 
 export const NAV_ITEMS: NavItem[] = [
@@ -55,4 +58,5 @@ export const NAV_ITEMS: NavItem[] = [
   },
   { label: "Usuarios", href: "/usuarios", icon: Users, permission: "users.view", enabled: true },
   { label: "Configuración", href: "/configuracion", icon: Settings, permission: "org.view", enabled: true },
+  { label: "Admin", href: "/admin", icon: ShieldCheck, permission: "org.view", enabled: true, platformAdmin: true },
 ];

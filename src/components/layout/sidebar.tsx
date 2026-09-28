@@ -14,11 +14,14 @@ type Props = {
   businessName: string;
   branchName: string;
   canOperate: boolean;
+  isPlatformAdmin?: boolean;
 };
 
-export function Sidebar({ role, businessName, branchName, canOperate }: Props) {
+export function Sidebar({ role, businessName, branchName, canOperate, isPlatformAdmin = false }: Props) {
   const pathname = usePathname();
-  const items = NAV_ITEMS.filter((item) => item.enabled && can(role, item.permission));
+  const items = NAV_ITEMS.filter(
+    (item) => item.enabled && can(role, item.permission) && (!item.platformAdmin || isPlatformAdmin)
+  );
 
   return (
     <aside className="flex h-full w-16 shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground md:w-60">
