@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { Fragment, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Copy, Loader2, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
@@ -59,7 +59,7 @@ export default function UsuariosView({ members, canManage, canOperate }: Props) 
     startTransition(async () => {
       const result = await task();
       if (!result.ok) {
-        setError(result.error ?? "No pudimos completar la operación.");
+        setError(result.error ?? "No pudimos completar la operaciÃ³n.");
         return;
       }
       setError(null);
@@ -71,27 +71,35 @@ export default function UsuariosView({ members, canManage, canOperate }: Props) 
     });
   }
 
+  const mozos = members.filter((member) => member.role === "mozo");
+  const team = members.filter((member) => member.role !== "mozo");
+  const activeCount = members.filter((member) => member.active).length;
+  const sections = [
+    { title: "Mozos", items: mozos, empty: "TodavÃ­a no hay mozos. CreÃ¡ el primero." },
+    { title: "Equipo", items: team, empty: "No hay otros usuarios en el negocio." },
+  ];
+
   return (
     <div className="space-y-5">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Usuarios</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Mozos</h1>
           <p className="text-sm text-muted-foreground">
-            {members.length} persona{members.length === 1 ? "" : "s"} · {members.filter((m) => m.active).length} activa
-            {members.filter((m) => m.active).length === 1 ? "" : "s"}
+            {mozos.length} mozo{mozos.length === 1 ? "" : "s"} Â· {team.length} en el equipo Â· {activeCount} activo
+            {activeCount === 1 ? "" : "s"}
           </p>
         </div>
         {canManage && (
           <Button onClick={() => setInviting(true)}>
-            <UserPlus className="size-4" /> Invitar usuario
+            <UserPlus className="size-4" /> Nuevo mozo
           </Button>
         )}
       </header>
 
       {!canOperate && (
         <Alert>
-          <AlertTitle>Suscripción vencida</AlertTitle>
-          <AlertDescription>La operación está pausada hasta reactivarla.</AlertDescription>
+          <AlertTitle>SuscripciÃ³n vencida</AlertTitle>
+          <AlertDescription>La operaciÃ³n estÃ¡ pausada hasta reactivarla.</AlertDescription>
         </Alert>
       )}
 
@@ -104,69 +112,79 @@ export default function UsuariosView({ members, canManage, canOperate }: Props) 
       <Card>
         <CardContent className="p-0">
           <ul className="divide-y">
-            {members.map((member) => (
-              <li key={member.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-                <div className="min-w-0">
-                  <p className="flex items-center gap-2 text-sm font-medium">
-                    {member.name}
-                    {member.isYou && <Badge variant="outline">Vos</Badge>}
-                    {!member.active && <Badge variant="secondary">Inactivo</Badge>}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {member.email ?? "Email no disponible"}
-                    {member.phone ? ` · ${member.phone}` : ""}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  {canManage ? (
-                    <select
-                      value={member.role}
-                      onChange={(event) => {
-                        const nextRole = event.target.value;
-                        run(() => updateMemberRole(member.id, nextRole), "Rol actualizado.");
-                      }}
-                      disabled={pending}
-                      className="flex h-9 rounded-lg border border-input bg-background px-2 text-sm"
-                    >
-                      {ROLES.map((role) => (
-                        <option key={role} value={role}>
-                          {ROLE_LABELS[role]}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <Badge variant="secondary">{ROLE_LABELS[member.role as Role] ?? member.role}</Badge>
-                  )}
-
-                  {canManage && (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={pending}
-                        onClick={() =>
-                          run(
-                            () => setMemberActive(member.id, !member.active),
-                            member.active ? "Usuario desactivado." : "Usuario activado."
-                          )
-                        }
-                      >
-                        {member.active ? "Desactivar" : "Activar"}
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        aria-label="Eliminar"
-                        disabled={member.isYou}
-                        onClick={() => setRemoving(member)}
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </li>
+            {sections.map((section) => (
+              <Fragment key={section.title}>
+                <li className="bg-muted/50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {section.title} ({section.items.length})
+                </li>
+                {section.items.length === 0 && (
+                  <li className="px-4 py-6 text-center text-sm text-muted-foreground">{section.empty}</li>
+                )}
+                {section.items.map((member) => (
+                  <li key={member.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                    <div className="min-w-0">
+                      <p className="flex items-center gap-2 text-sm font-medium">
+                        {member.name}
+                        {member.isYou && <Badge variant="outline">Vos</Badge>}
+                        {!member.active && <Badge variant="secondary">Inactivo</Badge>}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {member.email ?? "Email no disponible"}
+                        {member.phone ? ` Â· ${member.phone}` : ""}
+                      </p>
+                    </div>
+    
+                    <div className="flex flex-wrap items-center gap-2">
+                      {canManage ? (
+                        <select
+                          value={member.role}
+                          onChange={(event) => {
+                            const nextRole = event.target.value;
+                            run(() => updateMemberRole(member.id, nextRole), "Rol actualizado.");
+                          }}
+                          disabled={pending}
+                          className="flex h-9 rounded-lg border border-input bg-background px-2 text-sm"
+                        >
+                          {ROLES.map((role) => (
+                            <option key={role} value={role}>
+                              {ROLE_LABELS[role]}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <Badge variant="secondary">{ROLE_LABELS[member.role as Role] ?? member.role}</Badge>
+                      )}
+    
+                      {canManage && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={pending}
+                            onClick={() =>
+                              run(
+                                () => setMemberActive(member.id, !member.active),
+                                member.active ? "Usuario desactivado." : "Usuario activado."
+                              )
+                            }
+                          >
+                            {member.active ? "Desactivar" : "Activar"}
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            aria-label="Eliminar"
+                            disabled={member.isYou}
+                            onClick={() => setRemoving(member)}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </Fragment>
             ))}
           </ul>
         </CardContent>
@@ -175,13 +193,13 @@ export default function UsuariosView({ members, canManage, canOperate }: Props) 
       <Dialog open={inviting} onOpenChange={setInviting}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Invitar usuario</DialogTitle>
+            <DialogTitle>Nuevo mozo</DialogTitle>
             <DialogDescription>
-              Si el email no existe creamos la cuenta con una contraseña temporal.
+              Se crea la cuenta con email y contraseÃ±a temporal. AsÃ­ cada venta queda asociada a su usuario.
             </DialogDescription>
           </DialogHeader>
           <form
-            action={(formData) => run(() => inviteMember(formData), "Usuario agregado.")}
+            action={(formData) => run(() => inviteMember(formData), "Mozo creado.")}
             className="space-y-4"
           >
             <div className="space-y-2">
@@ -192,33 +210,17 @@ export default function UsuariosView({ members, canManage, canOperate }: Props) 
               <Label htmlFor="member-email">Email *</Label>
               <Input id="member-email" name="email" type="email" required />
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="member-phone">Teléfono</Label>
-                <Input id="member-phone" name="phone" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="member-role">Rol *</Label>
-                <select
-                  id="member-role"
-                  name="role"
-                  defaultValue="mozo"
-                  className="flex h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
-                >
-                  {ROLES.map((role) => (
-                    <option key={role} value={role}>
-                      {ROLE_LABELS[role]}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <input type="hidden" name="role" value="mozo" />
+            <div className="space-y-2">
+              <Label htmlFor="member-phone">TelÃ©fono</Label>
+              <Input id="member-phone" name="phone" />
             </div>
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => setInviting(false)}>
                 Cancelar
               </Button>
               <Button type="submit" disabled={pending}>
-                {pending && <Loader2 className="size-4 animate-spin" />} Invitar
+                {pending && <Loader2 className="size-4 animate-spin" />} Crear mozo
               </Button>
             </DialogFooter>
           </form>
@@ -228,7 +230,7 @@ export default function UsuariosView({ members, canManage, canOperate }: Props) 
       <Dialog open={secret !== null} onOpenChange={(next) => !next && setSecret(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Contraseña temporal</DialogTitle>
+            <DialogTitle>ContraseÃ±a temporal</DialogTitle>
             <DialogDescription>
               Compartila con el usuario. Solo se muestra una vez.
             </DialogDescription>
@@ -243,7 +245,7 @@ export default function UsuariosView({ members, canManage, canOperate }: Props) 
               onClick={() => {
                 if (secret) {
                   void navigator.clipboard.writeText(secret);
-                  toast.success("Contraseña copiada");
+                  toast.success("ContraseÃ±a copiada");
                 }
               }}
             >
@@ -261,7 +263,7 @@ export default function UsuariosView({ members, canManage, canOperate }: Props) 
           <DialogHeader>
             <DialogTitle>Eliminar usuario</DialogTitle>
             <DialogDescription>
-              {removing?.name} dejará de tener acceso a este negocio.
+              {removing?.name} dejarÃ¡ de tener acceso a este negocio.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
