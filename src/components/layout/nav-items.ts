@@ -56,7 +56,7 @@ export const NAV_ITEMS: NavItem[] = [
     enabled: true,
     requiresOperation: true,
   },
-  { label: "Usuarios", href: "/usuarios", icon: Users, permission: "users.view", enabled: true },
+  { label: "Mozos", href: "/usuarios", icon: Users, permission: "users.view", enabled: true },
   { label: "Configuración", href: "/configuracion", icon: Settings, permission: "org.view", enabled: true },
   { label: "Admin", href: "/admin", icon: ShieldCheck, permission: "org.view", enabled: true, platformAdmin: true },
 ];
